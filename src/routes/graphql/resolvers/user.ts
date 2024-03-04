@@ -1,7 +1,7 @@
 import { GraphQLResolveInfo } from 'graphql'
 import { ResolveTree, parseResolveInfo, simplifyParsedResolveInfoFragmentWithType } from 'graphql-parse-resolve-info'
 
-import { Context, ID, Args, SubscriptionMutationInput, UserInput } from '../types.js'
+import { Context, ID, Args, SubscriptionInput, UserInput } from '../types.js'
 import { userByIdDataLoader } from '../dataLoaders.js'
 
 export const userResolver = async (
@@ -17,13 +17,13 @@ export const usersResolver = async (
   root: any,
   _: Args,
   context: Context,
-  info: GraphQLResolveInfo
+  info: GraphQLResolveInfo,
 ) => {
   const parsedResolveInfoFragment = parseResolveInfo(info)
 
   const { fields }: { fields: { [key in string]: ResolveTree } } = simplifyParsedResolveInfoFragmentWithType(
     parsedResolveInfoFragment as ResolveTree,
-    info.returnType
+    info.returnType,
   )
 
   const users = await context.prisma.user.findMany({
@@ -44,17 +44,17 @@ export const usersResolver = async (
 
 export const createUser = async (
   root: any,
-  { dto: data }: { dto: UserInput },
-  { prisma }: Context
-) => (await prisma.user.create({ data }))
+  { dto }: { dto: UserInput },
+  { prisma }: Context,
+) => (await prisma.user.create({ data: dto }))
 
 export const changeUser = async (
   root: any,
-  { id, dto: data }: ID & { dto: Partial<UserInput> },
-  { prisma }: Context
+  { id, dto }: ID & { dto: Partial<UserInput> },
+  { prisma }: Context,
 ) => {
   try {
-    return (await prisma.user.update({ where: { id }, data }))
+    return (await prisma.user.update({ where: { id }, data: dto }))
   } catch {
     return null
   }
@@ -63,7 +63,7 @@ export const changeUser = async (
 export const deleteUser = async (
   root: any,
   { id }: ID,
-  { prisma }: Context
+  { prisma }: Context,
 ) => {
   try {
     await prisma.user.delete({ where: { id } })
@@ -75,12 +75,12 @@ export const deleteUser = async (
 
 export const subscribeTo = async (
   root: any,
-  { userId: id, authorId }: SubscriptionMutationInput,
-  { prisma }: Context
+  { userId, authorId }: SubscriptionInput,
+  { prisma }: Context,
 ) => {
   try {
     return (await prisma.user.update({
-      where: { id },
+      where: { id: userId },
       data: { userSubscribedTo: { create: { authorId } } },
     }))
   } catch {
@@ -90,12 +90,12 @@ export const subscribeTo = async (
 
 export const unsubscribeFrom = async (
   root: any,
-  { userId: subscriberId, authorId }: SubscriptionMutationInput,
-  { prisma }: Context
+  { userId, authorId }: SubscriptionInput,
+  { prisma }: Context,
 ) => {
   try {
     await prisma.subscribersOnAuthors.delete({
-      where: { subscriberId_authorId: { subscriberId, authorId } },
+      where: { subscriberId_authorId: { subscriberId: userId, authorId } },
     })
   } catch {
     return null

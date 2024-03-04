@@ -14,7 +14,7 @@ export const gqlProfileType: GraphQLObjectType = new GraphQLObjectType({
     isMale: { type: new GraphQLNonNull(GraphQLBoolean) },
     yearOfBirth: { type: new GraphQLNonNull(GraphQLInt) },
     memberType: {
-      type: new GraphQLNonNull(gqlMemberType),
+      type: gqlMemberType,
       resolve: async (source: Profile, _: Args, context: Context) => {
         const dl = await memberTypeByIdDataLoader(context)
         return (await dl.load(source.memberTypeId))

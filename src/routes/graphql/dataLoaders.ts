@@ -32,6 +32,27 @@ export const profilesByMemberTypeIdDataLoader = async (context: Context) => {
   return dl
 }
 
+export const profileByUserIdDataLoader = async (context: Context) => {
+  const key = 'profileByUserIdDataLoader'
+
+  const { dataLoaders, prisma } = context
+
+  let dl = dataLoaders.get(key) as unknown as ProfileDataLoader
+
+  if (!dl) {
+    const batcher = async (ids: readonly string[]) => {
+      const rows = await prisma.profile.findMany({
+        where: { userId: { in: ids as string[] } },
+      })
+      return ids.map(id => rows.find(({ userId }) => userId === id))
+    }
+    dl = new DataLoader(batcher) as unknown as ProfileDataLoader
+    dataLoaders.set(key, dl)
+  }
+
+  return dl
+}
+
 export const userByIdDataLoader = async (context: Context) => {
   const key = 'userByIdDataLoader'
 
@@ -72,27 +93,6 @@ export const memberTypeByIdDataLoader = async (context: Context) => {
       return ids.map(id => rows.find(row => row.id === id))
     }
     dl = new DataLoader(batcher) as unknown as MemberTypeDataLoader
-    dataLoaders.set(key, dl)
-  }
-
-  return dl
-}
-
-export const profileByUserIdDataLoader = async (context: Context) => {
-  const key = 'profileByUserIdDataLoader'
-
-  const { dataLoaders, prisma } = context
-
-  let dl = dataLoaders.get(key) as unknown as ProfileDataLoader
-
-  if (!dl) {
-    const batcher = async (ids: readonly string[]) => {
-      const rows = await prisma.profile.findMany({
-        where: { userId: { in: ids as string[] } },
-      })
-      return ids.map(id => rows.find(({ userId }) => userId === id))
-    }
-    dl = new DataLoader(batcher) as unknown as ProfileDataLoader
     dataLoaders.set(key, dl)
   }
 
